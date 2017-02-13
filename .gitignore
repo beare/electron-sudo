@@ -25,6 +25,4 @@ node_modules
 cache
 package-lock.json
 
-dist/index.js
-
 .idea

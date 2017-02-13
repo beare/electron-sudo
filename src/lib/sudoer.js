@@ -136,7 +136,7 @@ class SudoerDarwin extends SudoerUnix {
                     '-s',
                     command].join(' '),
                 result;
-            await self.reset();
+            // await self.reset();
             try {
                 result = await exec(sudoCommand, options);
                 resolve(result);
@@ -159,7 +159,7 @@ class SudoerDarwin extends SudoerUnix {
             let self = this,
                 bin = '/usr/bin/sudo',
                 cp;
-            await self.reset();
+            // await self.reset();
             // Prompt password
             await self.prompt();
             cp = spawn(bin, ['-n', '-s', '-E', [command, ...args].join(' ')],
