@@ -128,16 +128,28 @@ class SudoerDarwin extends SudoerUnix {
 
     async exec(command, options = {}) {
         return new Promise(async (resolve, reject) => {
-            let bin = 'osascript';
-
-            const commandEscaped = command.replace(/"/g, '\\\\\\\"');
-            const toExec = bin + ' -e "do shell script \\\"' + commandEscaped + '\\\" with administrator privileges"';
-
+            let self = this,
+                env = self.joinEnv(options),
+                sudoCommand = [
+                    '/usr/bin/sudo -n',
+                    env.join(' '),
+                    '-s',
+                    command].join(' '),
+                result;
+            // await self.reset();
             try {
-                const result = await exec(toExec, options);
+                result = await exec(sudoCommand, options);
                 resolve(result);
             } catch (err) {
-                reject(err);
+                try {
+                    // Prompt password
+                    await self.prompt();
+                    // Try once more
+                    result = await exec(sudoCommand, options);
+                    resolve(result);
+                } catch (err) {
+                    reject(err);
+                }
             }
         });
     }
@@ -145,14 +157,13 @@ class SudoerDarwin extends SudoerUnix {
     async spawn(command, args, options = {}) {
         return new Promise(async (resolve, reject) => {
             let self = this,
-                bin = 'osascript',
+                bin = '/usr/bin/sudo',
                 cp;
-
-            const commandWithArgs = [command, ...args].join(' ');
-            const commandWithArgsEscaped = commandWithArgs.replace(/"/g, '\\\\\\\"');
-            const toSpawn = bin + ' -e "do shell script \\\"' + commandWithArgsEscaped + '\\\" with administrator privileges"';
-
-            cp = spawn(toSpawn, [], options);
+            // await self.reset();
+            // Prompt password
+            await self.prompt();
+            cp = spawn(bin, ['-n', '-s', '-E', [command, ...args].join(' ')],
+                options);
             cp.on('error', async (err) => {
                 reject(err);
             });
