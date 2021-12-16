@@ -128,28 +128,16 @@ class SudoerDarwin extends SudoerUnix {
 
     async exec(command, options = {}) {
         return new Promise(async (resolve, reject) => {
-            let self = this,
-                env = self.joinEnv(options),
-                sudoCommand = [
-                    '/usr/bin/sudo -n',
-                    env.join(' '),
-                    '-s',
-                    command].join(' '),
-                result;
-            // await self.reset();
+            let bin = 'osascript';
+
+            const commandEscaped = command.replace(/"/g, '\\\\\\\"');
+            const toExec = bin + ' -e "do shell script \\\"' + commandEscaped + '\\\" with administrator privileges"';
+
             try {
-                result = await exec(sudoCommand, options);
+                const result = await exec(toExec, options);
                 resolve(result);
             } catch (err) {
-                try {
-                    // Prompt password
-                    await self.prompt();
-                    // Try once more
-                    result = await exec(sudoCommand, options);
-                    resolve(result);
-                } catch (err) {
-                    reject(err);
-                }
+                reject(err);
             }
         });
     }
@@ -157,13 +145,14 @@ class SudoerDarwin extends SudoerUnix {
     async spawn(command, args, options = {}) {
         return new Promise(async (resolve, reject) => {
             let self = this,
-                bin = '/usr/bin/sudo',
+                bin = 'osascript',
                 cp;
-            // await self.reset();
-            // Prompt password
-            await self.prompt();
-            cp = spawn(bin, ['-n', '-s', '-E', [command, ...args].join(' ')],
-                options);
+
+            const commandWithArgs = [command, ...args].join(' ');
+            const commandWithArgsEscaped = commandWithArgs.replace(/"/g, '\\\\\\\"');
+            const toSpawn = bin + ' -e "do shell script \\\"' + commandWithArgsEscaped + '\\\" with administrator privileges"';
+
+            cp = spawn(toSpawn, [], options);
             cp.on('error', async (err) => {
                 reject(err);
             });
